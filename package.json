@@ -1,0 +1,19 @@
+{
+    "name"          : "perfcollector.js",
+    "description"   : "Simple performance measurement tool for javascript",
+    "url"           : "http://www.fovea.cc/perfcollector/",
+    "keywords"      : ["performance", "mesure", "timer", "profiler", "profile", "optimize"],
+    "author"        : "Jean-Christophe Hoelt <hoelt@fovea.cc>",
+    "repository": {
+        "type": "git",
+        "url":  "git://github.com:Fovea/perfcollector.git"
+    },
+    "devDependencies": {
+        "docco": "latest",
+        "jshint": "latest",
+        "uglify-js": "latest"
+    },
+    "main"          : "perfcollector.js",
+    "version"       : "0.1.0",
+    "license"       : "MIT"
+}
