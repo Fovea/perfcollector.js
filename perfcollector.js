@@ -214,7 +214,7 @@
             var stat = this.stats[name];
             console.log(' - ' + name + ': ' + stat.calls + ' calls, total: ' + stat.totalMs + 'ms, avg:' + stat.averageMs + 'ms, max:' + stat.maxMs + 'ms');
         }
-    }
+    };
 
     // Our public API
     // --------------
