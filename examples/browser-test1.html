@@ -27,15 +27,15 @@ function showStats () {
     var table = $('<table style="text-align:center"></table>');
     table.append('<tr style="font-weight:bold"><td>Name</td>' +
                     '<td>#Calls</td>' +
-                    '<td>Average (ms)</td>' +
                     '<td>Total (ms)</td>' +
+                    '<td>Average (ms)</td>' +
                     '<td>Max (ms)</td></tr>');
     for (var name in globalTimer.stats) {
         var stat = globalTimer.stats[name];
         table.append('<tr><td>' + name + '</td>' +
                      '<td>' + stat.calls + '</td>' +
-                     '<td>' + stat.averageMs + '</td>' +
                      '<td>' + stat.totalMs + '</td>' +
+                     '<td>' + stat.averageMs + '</td>' +
                      '<td>' + stat.maxMs+ '</td></tr>');
     }
     $('#results').html(table);

@@ -22,16 +22,27 @@
 
     PerfCollector.VERSION = '0.1.0';
 
-    // Retrieve the high-performance time counter.
-    var performance = root.performance || {};
-    performance.now = (function() {
-        return performance.now       ||
-               performance.mozNow    ||
-               performance.msNow     ||
-               performance.oNow      ||
-               performance.webkitNow ||
-               function() { return new Date().getTime(); };
-        })();
+    // Retrieve the highest-precision time counter.
+    var performance = PerfCollector.performance = root.performance || {};
+
+    // For node, use process.hrtime is available
+    if (root.process && root.process.hrtime) {
+        performance.now = function () {
+            var t = process.hrtime();
+            return t[0] * 1000 + t[1] / 1000000;
+        };
+    }
+    // For browsers, use performance.now or Date.
+    else {
+        performance.now = (function() {
+            return performance.now       ||
+                performance.mozNow    ||
+                performance.msNow     ||
+                performance.oNow      ||
+                performance.webkitNow ||
+                function() { return new Date().getTime(); };
+            })();
+    }
 
     // perfcollector
     // -------------
@@ -56,6 +67,7 @@
         if (status !== false)
             status = true;
         this.enabled = status;
+        return this;
     };
 
     // Called at the beggining of an operation
@@ -97,8 +109,10 @@
     // Will update Jackbone.profiler.stats and show average duration on the
     // console.
     Timer.prototype.end = function (timer, t, timerName) {
+
         if (this.enabled) {
             if (typeof timer === 'string') {
+                timerName = timer;
                 timer = this._timersByName[timer];
             }
 
@@ -144,13 +158,32 @@
                     };
                 }
 
-                console.log('time(' + timerName + ') = %dms', duration);
+                // console.log('time[' + timerName + '] = ' + duration + 'ms');
+                return timer;
             }
             else {
-                console.log('WARNING: invalid profiling timer');
-                console.log(arguments);
+                console.warn('PerfCollector: Invalid timer');
             }
         }
+
+        // Return a dummy object.
+        if (typeof timerName !== 'string') {
+            if (typeof timer === 'string') {
+                timerName = timer;
+            }
+            if (typeof t === 'string') {
+                timerName = t;
+            }
+        }
+        var that = this;
+        return {
+            name: timerName,
+            stats: function () {
+                return that.stats[this.name];
+            }
+        };
     };
+
+    return PerfCollector;
 
 }).call(this);
