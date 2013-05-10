@@ -93,8 +93,8 @@ Advanced usage
     // Also possible to write timer.end('doStuff:success')
 
 ###Live stats
-    
-   function foo () {
+
+    function foo () {
        
        // Start a timer
        var fooTimer = perfs.start('foo');
@@ -103,7 +103,7 @@ Advanced usage
         
        // Stop the timer and display statistics to the console.
        fooTimer.end().logToConsole();
-   }
+    }
 
 ###Reuse a timer in a loop
 
