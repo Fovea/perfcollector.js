@@ -49,65 +49,106 @@
         this.stats = {};
 
         // Currently running timers
-        this._startDate = {};
+        this._timersByName = {};
+    };
 
-        // Name on console.profile
-        this._timerConsoleName = {};
+    Timer.prototype.enable = function (status) {
+        if (status !== false)
+            status = true;
+        this.enabled = status;
     };
 
     // Called at the beggining of an operation
     Timer.prototype.start = function (t, timerName) {
+        var startDate;
+        var ret = {};
+
         if (this.enabled) {
-            var id = _.uniqueId('jt');
-            this._startDate[id] = t || performance.now();
-            if (console.profile && timerName) {
-                this._timerConsoleName[id] = timerName;
-                console.profile(timerName);
+            if (typeof t === 'string') {
+                timerName = t;
+                t = undefined;
             }
-            return id;
+            if (timerName) {
+                if (console.profile) {
+                    console.profile(timerName);
+                }
+                this._timersByName[timerName] = ret;
+            }
+
+            startDate = t || performance.now();
         }
+
+        var that = this;
+        
+        ret.name = timerName;
+        ret.startDate = startDate;
+        ret.end = function (t, timerName) {
+            that.end(this, t, timerName);
+        };
+        ret.stats = function () {
+            return that.stats[timerName];
+        };
+
+        return ret;
     };
 
     // Called when an operation is done.
     //
     // Will update Jackbone.profiler.stats and show average duration on the
     // console.
-    Timer.prototype.end = function (timerId, timerName, t) {
+    Timer.prototype.end = function (timer, t, timerName) {
         if (this.enabled) {
-        if (this._startDate[timerId]) {
-            var duration = (t || performance.now()) - this._startDate[timerId];
-            delete this._startDate[timerId];
+            if (typeof timer === 'string') {
+                timer = this._timersByName[timer];
+            }
 
-            if (console.profile) {
-                if (this._timerConsoleName[timerId]) {
-                    console.profileEnd(this._timerConsoleName[timerId]);
-                    delete this._timerConsoleName[timerId];
+            if (timer && typeof timer.startDate !== 'undefined') {
+
+                if (typeof t === 'string') {
+                    timerName = t;
+                    t = undefined;
                 }
-            }
 
-            // Already have stats for this method? Update them.
-            if (typeof this.stats[timerName] !== 'undefined') {
-                var stats = this.stats[timerName];
-                stats.calls += 1;
-                stats.totalMs += duration;
-                if (duration > stats.maxMs) {
-                    stats.maxMs = duration;
+                var duration = (t || performance.now()) - timer.startDate;
+
+                var originalName = timer.name;
+                if (originalName) {
+                    delete this._timersByName[originalName];
+                    if (!timerName) {
+                        timerName = originalName;
+                    }
                 }
-            }
-            else {
-                // It's the first time we profile this method, create the
-                // initial stats.
-                this.stats[timerName] = {
-                    calls: 1,
-                    totalMs: duration,
-                    maxMs: duration
-                };
-            }
 
-            console.log('time(' + timerName + ') = ' + duration + 'ms');
+                if (console.profile && originalName) {
+                    console.profileEnd(originalName);
+                }
+
+                // Already have stats for this method? Update them.
+                if (typeof this.stats[timerName] !== 'undefined') {
+                    var stats = this.stats[timerName];
+                    stats.calls += 1;
+                    stats.totalMs += duration;
+                    if (duration > stats.maxMs) {
+                        stats.maxMs = duration;
+                    }
+                    stats.averageMs = stats.totalMs / stats.calls;
+                }
+                else {
+                    // It's the first time we profile this method, create the
+                    // initial stats.
+                    this.stats[timerName] = {
+                        calls: 1,
+                        totalMs: duration,
+                        maxMs: duration,
+                        averageMs: duration
+                    };
+                }
+
+                console.log('time(' + timerName + ') = %dms', duration);
             }
             else {
                 console.log('WARNING: invalid profiling timer');
+                console.log(arguments);
             }
         }
     };

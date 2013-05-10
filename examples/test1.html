@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xml:lang="en" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>PerfCollector.js Example 1</title>
+
+    <!-- JQuery -->
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="../perfcollector.js"></script>
+    <script type="text/javascript">
+
+var globalTimer = new PerfCollector.Timer();
+globalTimer.enable();
+
+function heavyStuff () {
+    var number = 1;
+    for (var i = 0; i < 1000; ++i) {
+        number += i*i;
+    }
+    return number;
+}
+
+function showStats () {
+    var timer = globalTimer.start()
+
+    var table = $('<table style="text-align:center"></table>');
+    table.append('<tr style="font-weight:bold"><td>Name</td>' +
+                    '<td>#Calls</td>' +
+                    '<td>Average (ms)</td>' +
+                    '<td>Total (ms)</td>' +
+                    '<td>Max (ms)</td></tr>');
+    for (var name in globalTimer.stats) {
+        var stat = globalTimer.stats[name];
+        table.append('<tr><td>' + name + '</td>' +
+                     '<td>' + stat.calls + '</td>' +
+                     '<td>' + stat.averageMs + '</td>' +
+                     '<td>' + stat.totalMs + '</td>' +
+                     '<td>' + stat.maxMs+ '</td></tr>');
+    }
+    $('#results').html(table);
+
+    timer.end('showStats');
+}
+
+function handleClick (e) {
+
+    // Start the timer
+    var timer = globalTimer.start('handleClick');
+
+    e.preventDefault();
+    console.log('handleClick');
+
+    heavyStuff();
+
+    // Stop the timer
+    timer.end();
+
+    showStats();
+
+    return false;
+}
+
+var initTimer = globalTimer.start('initialization');
+
+$(document).ready(function () {
+    $('button').on('click', handleClick);
+    globalTimer.end(initTimer);
+});
+    </script>
+
+</head>
+<body>
+    <button>Click Me</button>
+    <div id="results">No stats...</div>
+</body>
+</html>
+
