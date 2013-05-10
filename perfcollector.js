@@ -1,9 +1,9 @@
-//     perfcollector.js 0.1.0
+//     perfcollector.js
 
 //     (c) 2013, Jean-Christophe Hoelt, Fovea.cc
 //     perfcollector may be freely distributed under the MIT license.
 //     For all details and documentation:
-//     http://www.fovea.cc/perfcollector/
+//     https://github.com/Fovea/perfcollector.js
 (function () {
     'use strict';
 
@@ -206,24 +206,6 @@
         }
 
         return this;
-        /*
-
-        // Return a dummy object.
-        if (typeof timerName !== 'string') {
-            if (typeof timer === 'string') {
-                timerName = timer;
-            }
-            if (typeof t === 'string') {
-                timerName = t;
-            }
-        }
-
-        return {
-            klass: this,
-            name: timerName,
-            stats: timerStats,
-            logToConsole: timerLogToConsole
-        }; */
     };
 
     // Run through the stats, display on the console.
@@ -238,7 +220,7 @@
     // --------------
 
     // Library version
-    PerfCollector.VERSION = '0.1.0';
+    PerfCollector.VERSION = '0.8.0';
 
     // Create a new perf collector
     PerfCollector.create = function () {
