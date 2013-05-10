@@ -10,7 +10,7 @@
     <script src="../perfcollector.js"></script>
     <script type="text/javascript">
 
-var globalTimer = new PerfCollector.Timer();
+var globalTimer = PerfCollector.create();
 globalTimer.enable();
 
 function heavyStuff () {

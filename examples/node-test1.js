@@ -1,9 +1,9 @@
 // Load PerfCollector module, initialize one instance and enable it!
 var PerfCollector = require('../perfcollector');
-var perf = new PerfCollector.Timer().enable();
+var perf = PerfCollector.create().enable();
 
 // stupid time eating method
-function heavyStuff () {
+function syncStuff () {
     var number = 1;
     for (var i = 0; i < 1000000; ++i) {
         number += i*i;
@@ -11,31 +11,23 @@ function heavyStuff () {
     return number;
 }
 
-// do some stuff, including the heavyStuff.
-function doStuff () {
-
-    // Start the timer
-    var timer = perf.start('doStuff()');
-
-    // Do stuff
-    heavyStuff();
-
-    // Stop the timer
-    timer.end();
-}
-
 // an async method we wish to benchmark as well.
-function asyncLoop(callback) {
+function asyncStuff(callback) {
+
+    // Here we have to keep the reference to our
+    // timer, in order to stop it when the operation
+    // is done.
+    var loopTimer = perf.start();
     setTimeout(function () {
-        for (var i = 0; i < 100; ++i) {
-            doStuff();
-        }
+        // Notice that you can give a name to your timer
+        // at the beggining or at the end. Sometimes useful.
+        loopTimer.end('asyncStuff()');
         callback();
-    }, 0);
+    }, 100);
 }
 
 // perform a set of asynchronous operations.
-function manyAsyncLoops(callback) {
+function manyAsync(callback) {
 
     var count = 0;
     var done = function () {
@@ -45,31 +37,24 @@ function manyAsyncLoops(callback) {
     };
 
     for (var i = 0; i < 5; ++i) {
-
-        // Here we have to keep the reference to our
-        // timer, in order to stop it when the operation
-        // is done.
-        var loopTimer = perf.start();
-
-        asyncLoop(function () {
-
-            // Notice that you can give a name to your timer
-            // at the beggining or at the end. Sometimes useful.
-            loopTimer.end('asyncLoop()');
+        asyncStuff(function () {
             done();
         });
     }
 }
 
-// Run through the stats, display on the console.
-function showStats (perf) {
-    for (var name in perf.stats) {
-        var stat = perf.stats[name];
-        console.log(name + ': ' + stat.calls + ' calls, total: ' + stat.totalMs + 'ms, average:' + stat.averageMs + 'ms, max:' + stat.maxMs + 'ms');
-    }
-}
-
 // Run a few loops, then show the result.
-manyAsyncLoops(function () {
-    showStats(perf);
+
+perf.start('main');
+
+var timer = perf.timer('syncStuff()');
+for (var i = 0; i < 100; ++i) {
+    timer.start();
+    syncStuff();
+    timer.end();
+}
+manyAsync(function () {
+    perf.end('main').logToConsole();
 });
+
+perfs = perf;

@@ -20,10 +20,8 @@
         PerfCollector = root.PerfCollector = {};
     }
 
-    PerfCollector.VERSION = '0.1.0';
-
     // Retrieve the highest-precision time counter.
-    var performance = PerfCollector.performance = root.performance || {};
+    var performance = root.performance || {};
 
     // For node, use process.hrtime is available
     if (root.process && root.process.hrtime) {
@@ -51,7 +49,7 @@
     // Used by the Router to profile view creation times.
     //
     // Set Jackbone.profile.enabled = true to activate.
-    var Timer = PerfCollector.Timer = function () {
+    var Klass = function () {
 
         // Set to true to enable profiling your views.
         this.enabled = false;
@@ -63,17 +61,48 @@
         this._timersByName = {};
     };
 
-    Timer.prototype.enable = function (status) {
+    Klass.prototype.enable = function (status) {
         if (status !== false)
             status = true;
         this.enabled = status;
         return this;
     };
 
+    Klass.prototype.disable = function () {
+        this.enabled = false;
+        return this;
+    };
+
+    var timerStart = function (t) {
+        // Start over an already used timer.
+        this.startDate = t || performance.now();
+        return this;
+    };
+    var timerEnd = function (t, timerName) {
+        this.klass.end(this, t, timerName);
+        return this;
+    };
+    var timerStats = function () {
+        return this.klass.stats[this.name] || {
+            calls: 0,
+            totalMs: 0,
+            averageMs: 0,
+            maxMs: 0,
+            lastMs: 0
+        };
+    };
+    var timerLogToConsole = function () {
+        var stat = timerStats.call(this);
+        if (stat) {
+            console.log(this.name + ': ' + stat.calls + ' calls, total: ' + stat.totalMs + 'ms, avg:' + stat.averageMs + 'ms, max:' + stat.maxMs + 'ms');
+        }
+        return this;
+    };
+
     // Called at the beggining of an operation
-    Timer.prototype.start = function (t, timerName) {
+    Klass.prototype.start = Klass.prototype.timer = function (t, timerName) {
         var startDate;
-        var ret = {};
+        var timer = {};
 
         if (this.enabled) {
             if (typeof t === 'string') {
@@ -81,34 +110,32 @@
                 t = undefined;
             }
             if (timerName) {
-                if (console.profile) {
-                    console.profile(timerName);
+                if (!this._timersByName[timerName]) {
+                    if (console.profile) {
+                        console.profile(timerName);
+                    }
+                    this._timersByName[timerName] = timer;
                 }
-                this._timersByName[timerName] = ret;
             }
 
-            startDate = t || performance.now();
+            timer.startDate = t || performance.now();
         }
 
-        var that = this;
-        
-        ret.name = timerName;
-        ret.startDate = startDate;
-        ret.end = function (t, timerName) {
-            that.end(this, t, timerName);
-        };
-        ret.stats = function () {
-            return that.stats[timerName];
-        };
+        timer.klass = this;
+        timer.name = timerName;
+        timer.end = timerEnd;
+        timer.stats = timerStats;
+        timer.logToConsole = timerLogToConsole;
+        timer.start = timerStart;
 
-        return ret;
+        return timer;
     };
 
     // Called when an operation is done.
     //
     // Will update Jackbone.profiler.stats and show average duration on the
     // console.
-    Timer.prototype.end = function (timer, t, timerName) {
+    Klass.prototype.end = function (timer, t, timerName) {
 
         if (this.enabled) {
             if (typeof timer === 'string') {
@@ -123,18 +150,20 @@
                     t = undefined;
                 }
 
-                var duration = (t || performance.now()) - timer.startDate;
+                var now = (t || performance.now());
+                var duration = now - timer.startDate;
 
                 var originalName = timer.name;
                 if (originalName) {
-                    delete this._timersByName[originalName];
+                    if (this._timersByName[originalName]) {
+                        delete this._timersByName[originalName];
+                        if (console.profile) {
+                            console.profileEnd(originalName);
+                        }
+                    }
                     if (!timerName) {
                         timerName = originalName;
                     }
-                }
-
-                if (console.profile && originalName) {
-                    console.profileEnd(originalName);
                 }
 
                 // Already have stats for this method? Update them.
@@ -146,6 +175,7 @@
                         stats.maxMs = duration;
                     }
                     stats.averageMs = stats.totalMs / stats.calls;
+                    stats.lastMs = duration;
                 }
                 else {
                     // It's the first time we profile this method, create the
@@ -154,17 +184,29 @@
                         calls: 1,
                         totalMs: duration,
                         maxMs: duration,
-                        averageMs: duration
+                        averageMs: duration,
+                        lastMs: duration
                     };
                 }
 
                 // console.log('time[' + timerName + '] = ' + duration + 'ms');
-                return timer;
+                timer.startDate = undefined;
+                timer.name = timerName;
+                // return timer;
             }
             else {
-                console.warn('PerfCollector: Invalid timer');
+                if (!timer) {
+                    console.warn('PerfCollector: Invalid timer');
+                }
+                else {
+                    console.warn('PerfCollector: Timer already ended');
+                    // return timer;
+                }
             }
         }
+
+        return this;
+        /*
 
         // Return a dummy object.
         if (typeof timerName !== 'string') {
@@ -175,13 +217,36 @@
                 timerName = t;
             }
         }
-        var that = this;
+
         return {
+            klass: this,
             name: timerName,
-            stats: function () {
-                return that.stats[this.name];
-            }
-        };
+            stats: timerStats,
+            logToConsole: timerLogToConsole
+        }; */
+    };
+
+    // Run through the stats, display on the console.
+    Klass.prototype.logToConsole = function () {
+        for (var name in this.stats) {
+            var stat = this.stats[name];
+            console.log(' - ' + name + ': ' + stat.calls + ' calls, total: ' + stat.totalMs + 'ms, avg:' + stat.averageMs + 'ms, max:' + stat.maxMs + 'ms');
+        }
+    }
+
+    // Our public API
+    // --------------
+
+    // Library version
+    PerfCollector.VERSION = '0.1.0';
+
+    // Create a new perf collector
+    PerfCollector.create = function () {
+        return new Klass();
+    };
+
+    PerfCollector.now = function () {
+        return performance.now();
     };
 
     return PerfCollector;
