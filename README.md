@@ -12,7 +12,7 @@ Simple usage
     // Collect statistics about the execution of stuff().
     perfs.start('stuff');
     stuff();
-    perfs.end('stuff);
+    perfs.end('stuff');
 
     perfs.logToConsole();
 
@@ -27,7 +27,7 @@ Analyze the stats
 -----------------
 
 PerfCollector gives access to the number of time a given timer has been called,
-the total time, average time and max time spend doing the action.
+the total time, average time and max time spent doing the action.
 
     > perfs.stats
     { 'doStuff()': 
